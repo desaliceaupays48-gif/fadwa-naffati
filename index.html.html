@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Calcul Rapide</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Le tableau / la calculatrice */
+        .game-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Changement de couleur du tableau selon le résultat */
+        .game-container.correct {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .game-container.wrong {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+
+        /* Zone d'affichage du calcul */
+        .expression {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .score-board {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        /* Zone des boutons de réponse */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .option-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="game-card">
+        <div class="score-board">Score : <span id="score">0</span></div>
+        <div class="expression" id="question">1 + 5 = ?</div>
+        
+        <div class="options-container">
+            <button class="option-btn" onclick="checkAnswer(this)">7</button>
+            <button class="option-btn" onclick="checkAnswer(this)">6</button>
+            <button class="option-btn" onclick="checkAnswer(this)">14</button>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales du jeu
+        let correctAnswer = 0;
+        let score = 0;
+
+        const gameCard = document.getElementById('game-card');
+        const questionElement = document.getElementById('question');
+        const scoreElement = document.getElementById('score');
+        const buttons = document.querySelectorAll('.option-btn');
+
+        // Fonction pour générer un nombre aléatoire entre min et max
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Fonction principale pour générer un nouveau calcul
+        function generateCalculation() {
+            // Réinitialise les couleurs du tableau après un court instant si nécessaire
+            gameCard.className = "game-container"; 
+
+            const operators = ['+', '-', '*'];
+            const operator = operators[getRandomNumber(0, operators.length - 1)];
+            
+            let num1 = getRandomNumber(1, 12);
+            let num2 = getRandomNumber(1, 12);
+
+            // Éviter les résultats négatifs pour les soustractions (plus simple au début)
+            if (operator === '-' && num1 < num2) {
+                let temp = num1;
+                num1 = num2;
+                num2 = temp;
+            }
+
+            // Calcul de la vraie réponse
+            if (operator === '+') correctAnswer = num1 + num2;
+            else if (operator === '-') correctAnswer = num1 - num2;
+            else if (operator === '*') correctAnswer = num1 * num2;
+
+            // Affichage du calcul à l'écran
+            // On remplace l'étoile '*' par un 'x' plus joli pour la multiplication
+            const displayOperator = operator === '*' ? 'x' : operator;
+            questionElement.innerText = `${num1} ${displayOperator} ${num2} = ?`;
+
+            // Génération de fausses réponses uniques
+            let wrongAnswer1 = correctAnswer + getRandomNumber(1, 5);
+            let wrongAnswer2 = correctAnswer - getRandomNumber(1, 5);
+            
+            // Sécurité pour éviter que les fausses réponses soient identiques à la vraie
+            if (wrongAnswer2 === correctAnswer || wrongAnswer2 < 0) {
+                wrongAnswer2 = correctAnswer + getRandomNumber(6, 10);
+            }
+
+            // Mettre les réponses dans un tableau et les mélanger
+            let answers = [correctAnswer, wrongAnswer1, wrongAnswer2];
+            answers.sort(() => Math.random() - 0.5);
+
+            // Assigner les valeurs aux 3 boutons
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].innerText = answers[i];
+                buttons[i].disabled = false; // Réactiver les boutons
+            }
+        }
+
+        // Fonction appelée quand l'utilisateur clique sur un bouton
+        function checkAnswer(selectedButton) {
+            const userAnswer = parseInt(selectedButton.innerText);
+
+            // Désactiver les boutons temporairement pour éviter le spam
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (userAnswer === correctAnswer) {
+                // Bonne réponse : Tableau Vert
+                gameCard.classList.add('correct');
+                score++;
+                scoreElement.innerText = score;
+                
+                // On attend 1 seconde pour voir le vert, puis on passe au calcul suivant
+                setTimeout(generateCalculation, 1000);
+            } else {
+                // Mauvaise réponse : Tableau Rouge
+                gameCard.classList.add('wrong');
+                score = 0; // Optionnel : Remet le score à zéro si on perd
+                scoreElement.innerText = score;
+
+                // Laisse le tableau rouge pendant 1.5 seconde pour voir l'erreur, puis relance
+                setTimeout(generateCalculation, 1500);
+            }
+        }
+
+        // Lancer le premier calcul au chargement de la page
+        generateCalculation();
+    </script>
+</body>
+</html>
